@@ -3,3 +3,4 @@ numpy
 yfinance
 fredapi
 python-dotenv
+matplotlib

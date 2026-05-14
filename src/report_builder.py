@@ -3,10 +3,45 @@ from datetime import datetime
 from scoring import calculate_scores
 from config import REPORTS_DIR
 
+import os
 
-def build_report():
+def generate_reports_index():
+    reports_dir = REPORTS_DIR
 
-    results = calculate_scores()
+    files = sorted(
+        [f for f in os.listdir(reports_dir) if f.endswith(".md")],
+        reverse=True
+    )
+
+    html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Market Intelligence Reports</title>
+</head>
+<body>
+    <h1>Market Intelligence Reports</h1>
+    <ul>
+"""
+
+    for file in files:
+        html += f'<li><a href="{file}">{file}</a></li>\n'
+
+    html += """
+    </ul>
+    <p><a href="../">Back to Home</a></p>
+</body>
+</html>
+"""
+
+    with open(reports_dir / "index.html", "w") as f:
+        f.write(html)
+
+
+
+def build_report(results=None):
+    if results is None:
+        results = calculate_scores()
 
     today = datetime.today().strftime("%Y-%m-%d")
 
@@ -115,8 +150,8 @@ This report is for educational and informational purposes only and does not cons
     with open(output_file, "w") as f:
         f.write(report)
 
-    print(f"\nReport generated: {output_file}\n")
-
+    generate_reports_index()
+    print("Reports index updated.")
 
 if __name__ == "__main__":
     build_report()
