@@ -1,42 +1,8 @@
+import os
 from datetime import datetime
 
-from scoring import calculate_scores
 from config import REPORTS_DIR
-
-import os
-
-def generate_reports_index():
-    reports_dir = REPORTS_DIR
-
-    files = sorted(
-        [f for f in os.listdir(reports_dir) if f.endswith(".md")],
-        reverse=True
-    )
-
-    html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Market Intelligence Reports</title>
-</head>
-<body>
-    <h1>Market Intelligence Reports</h1>
-    <ul>
-"""
-
-    for file in files:
-        html += f'<li><a href="{file}">{file}</a></li>\n'
-
-    html += """
-    </ul>
-    <p><a href="../">Back to Home</a></p>
-</body>
-</html>
-"""
-
-    with open(reports_dir / "index.html", "w") as f:
-        f.write(html)
-
+from scoring import calculate_scores
 
 
 def build_report(results=None):
@@ -150,7 +116,82 @@ This report is for educational and informational purposes only and does not cons
     with open(output_file, "w") as f:
         f.write(report)
 
+    print(f"\nReport generated: {output_file}\n")
+
     generate_reports_index()
+
+
+def generate_reports_index():
+    reports_dir = REPORTS_DIR
+
+    files = sorted(
+        [f for f in os.listdir(reports_dir) if f.endswith(".md")],
+        reverse=True
+    )
+
+    latest_file = files[0] if files else None
+
+    def pretty_name(filename):
+        name = filename.replace("market_report_", "").replace(".md", "")
+        return f"Weekly Market Report - {name}"
+
+    html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Market Intelligence Reports</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Market Intelligence Reports</h1>
+"""
+
+    if latest_file:
+        html += f"""
+    <div class="card">
+        <h2>Latest Report</h2>
+        <p><a href="{latest_file}">{pretty_name(latest_file)}</a></p>
+    </div>
+"""
+
+    html += """
+    <h2>Report History</h2>
+    <ul>
+"""
+
+    for file in files:
+        html += f'        <li><a href="{file}">{pretty_name(file)}</a></li>\n'
+
+    html += """
+    </ul>
+
+    <p><a href="../">Back to Home</a></p>
+</body>
+</html>
+"""
+
+    with open(reports_dir / "index.html", "w") as f:
+        f.write(html)
+
     print("Reports index updated.")
 
 if __name__ == "__main__":
