@@ -1,3 +1,4 @@
+import shutil
 from llm import generate_summary
 import os
 from datetime import datetime
@@ -28,6 +29,27 @@ def build_report(results=None):
     unemployment_month = latest_date(
         "fred_macro_data.csv", "unemployment_rate", monthly=True
     )
+
+    # Preserve chart snapshots for this report date.
+    chart_names = [
+        "spy_vs_200dma.png",
+        "30d_volatility.png",
+        "yield_spread.png",
+        "unemployment_trend.png",
+    ]
+    charts_dir = REPORTS_DIR.parent / "charts"
+    archive_dir = charts_dir / today
+
+    missing = [
+        name for name in chart_names
+        if not (charts_dir / name).is_file()
+    ]
+    if missing:
+        raise FileNotFoundError(f"Missing charts: {missing}")
+
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    for name in chart_names:
+        shutil.copy2(charts_dir / name, archive_dir / name)
 
     report = f"""
 # Weekly Market Intelligence Report
@@ -100,25 +122,25 @@ Total Risk Score: **{results['total_risk_score']}**
 
 ## SPY vs 200DMA
 
-![SPY](../charts/spy_vs_200dma.png)
+![SPY](../charts/{today}/spy_vs_200dma.png)
 
 ---
 
 ## 30D Volatility
 
-![Volatility](../charts/30d_volatility.png)
+![Volatility](../charts/{today}/30d_volatility.png)
 
 ---
 
 ## Yield Spread
 
-![Yield Spread](../charts/yield_spread.png)
+![Yield Spread](../charts/{today}/yield_spread.png)
 
 ---
 
 ## Unemployment Trend
 
-![Unemployment](../charts/unemployment_trend.png)
+![Unemployment](../charts/{today}/unemployment_trend.png)
 
 ---
 
