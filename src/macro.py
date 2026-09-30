@@ -4,47 +4,51 @@ from config import DATA_RAW_DIR, DATA_PROCESSED_DIR
 
 
 def calculate_macro_signals():
-    file_path = DATA_RAW_DIR / "fred_macro_data.csv"
-
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(DATA_RAW_DIR / "fred_macro_data.csv")
     df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").set_index("date")
 
-    df = df.sort_values("date")
+    # Calculate labor trends from monthly observations before forward-filling.
+    unemployment = df["unemployment_rate"].dropna()
+    monthly = unemployment.resample("MS").last().dropna()
 
-    # Forward-fill because FRED series have different frequencies
-    df[["ten_year_treasury", "three_month_treasury", "unemployment_rate"]] = (
-        df[["ten_year_treasury", "three_month_treasury", "unemployment_rate"]]
-        .ffill()
+    labor = pd.DataFrame({"unemployment_rate": monthly})
+    labor["unemployment_3m_avg"] = monthly.rolling(3).mean()
+    labor["unemployment_3m_change"] = (
+        labor["unemployment_3m_avg"].diff(3)
     )
 
-    # 10Y - 3M yield spread
-    df["yield_spread_10y_3m"] = (
-        df["ten_year_treasury"] - df["three_month_treasury"]
+    # Align monthly labor signals with daily Treasury observations.
+    dates = df.index.union(labor.index).sort_values()
+    signals = df[
+        ["ten_year_treasury", "three_month_treasury"]
+    ].reindex(dates).ffill()
+    signals = signals.join(labor.reindex(dates).ffill())
+    signals["yield_spread_10y_3m"] = (
+        signals["ten_year_treasury"]
+        - signals["three_month_treasury"]
     )
+    signals.index.name = "date"
 
-    # Unemployment 3-month moving average
-    df["unemployment_3m_avg"] = df["unemployment_rate"].rolling(window=3).mean()
+    signals.to_csv(DATA_PROCESSED_DIR / "macro_signals.csv")
 
-    # Compare latest 3-month avg vs previous 3-month avg
-    df["unemployment_3m_change"] = df["unemployment_3m_avg"].diff(3)
+    fields = [
+        "yield_spread_10y_3m",
+        "unemployment_rate",
+        "unemployment_3m_avg",
+        "unemployment_3m_change",
+    ]
+    valid = signals.dropna(subset=fields)
+    if valid.empty:
+        raise ValueError("Insufficient data to calculate macro signals.")
 
-    output_path = DATA_PROCESSED_DIR / "macro_signals.csv"
-    df.to_csv(output_path, index=False)
-
-    latest = df.dropna().iloc[-1]
-
-    summary = {
-        "yield_spread_10y_3m": round(float(latest["yield_spread_10y_3m"]), 2),
-        "unemployment_rate": round(float(latest["unemployment_rate"]), 2),
-        "unemployment_3m_avg": round(float(latest["unemployment_3m_avg"]), 2),
-        "unemployment_3m_change": round(float(latest["unemployment_3m_change"]), 2),
+    latest = valid.iloc[-1]
+    return {
+        field: round(float(latest[field]), 2)
+        for field in fields
     }
-
-    return summary
 
 
 if __name__ == "__main__":
-    summary = calculate_macro_signals()
-
     print("\nMacro Signal Summary\n")
-    print(summary)
+    print(calculate_macro_signals())

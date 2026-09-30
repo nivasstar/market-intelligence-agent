@@ -1,7 +1,9 @@
+from llm import generate_summary
 import os
 from datetime import datetime
 
-from config import REPORTS_DIR
+from config import REPORTS_DIR, DATA_RAW_DIR
+import pandas as pd
 from scoring import calculate_scores
 
 
@@ -11,10 +13,32 @@ def build_report(results=None):
 
     today = datetime.today().strftime("%Y-%m-%d")
 
+    def latest_date(filename, column, monthly=False):
+        data = pd.read_csv(DATA_RAW_DIR / filename)
+        dates = pd.to_datetime(
+            data.loc[data[column].notna(), "date"]
+        )
+        if dates.empty:
+            raise ValueError(f"No observations for {column}")
+        return dates.max().strftime("%Y-%m" if monthly else "%Y-%m-%d")
+
+    spy_date = latest_date("spy_prices.csv", "close")
+    ten_year_date = latest_date("fred_macro_data.csv", "ten_year_treasury")
+    three_month_date = latest_date("fred_macro_data.csv", "three_month_treasury")
+    unemployment_month = latest_date(
+        "fred_macro_data.csv", "unemployment_rate", monthly=True
+    )
+
     report = f"""
 # Weekly Market Intelligence Report
 
-Date: {today}
+Report generated: {today}
+
+Data observations:
+- SPY close: {spy_date}
+- 10-year Treasury yield: {ten_year_date}
+- 3-month Treasury yield: {three_month_date}
+- Unemployment reference month: {unemployment_month}
 
 ---
 
@@ -110,6 +134,15 @@ The scoring model combines trend, volatility, drawdown, yield curve structure, a
 
 This report is for educational and informational purposes only and does not constitute investment advice.
 """
+
+    print("Generating AI executive summary...")
+    summary = generate_summary(report.split("# Charts", 1)[0])
+    report = report.replace(
+        "# Executive Summary\n",
+        "# Executive Summary\n\n"
+        + "AI-generated commentary:\n\n" + summary + "\n",
+        1,
+    )
 
     output_file = REPORTS_DIR / f"market_report_{today}.md"
 
