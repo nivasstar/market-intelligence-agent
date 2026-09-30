@@ -4,3 +4,4 @@ yfinance
 fredapi
 python-dotenv
 matplotlib
+openai

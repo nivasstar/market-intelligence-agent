@@ -1,0 +1,103 @@
+name: Weekly Market Report
+
+on:
+  schedule:
+    - cron: "17 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: market-report-pages
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate report
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ENABLE_AI_SUMMARY: "false"
+          MPLBACKEND: Agg
+        run: python src/agent.py
+
+      - name: Save reports and charts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports charts
+          if ! git diff --cached --quiet; then
+            git commit -m "Update weekly market report"
+            git push origin HEAD:main
+          fi
+
+      - name: Build public site
+        run: |
+          pip install markdown
+          python - <<'PY'
+          from pathlib import Path
+          import html
+          import shutil
+          import markdown
+
+          site = Path("_site")
+          site.mkdir(exist_ok=True)
+          shutil.copy2("index.html", site / "index.html")
+          shutil.copytree("charts", site / "charts", dirs_exist_ok=True)
+          shutil.copytree("reports", site / "reports", dirs_exist_ok=True)
+
+          for report in (site / "reports").glob("*.md"):
+              body = markdown.markdown(
+                  report.read_text(), extensions=["tables"]
+              )
+              page = (
+                  "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                  "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+                  f"<title>{html.escape(report.stem)}</title>"
+                  "<style>body{font-family:Arial,sans-serif;max-width:960px;"
+                  "margin:40px auto;padding:20px;line-height:1.6}"
+                  "table{border-collapse:collapse}th,td{border:1px solid #ddd;"
+                  "padding:8px}img{max-width:100%}</style></head><body>"
+                  "<a href='./'>All reports</a>"
+                  + body + "</body></html>"
+              )
+              report.with_suffix(".html").write_text(page)
+
+          index = site / "reports" / "index.html"
+          text = index.read_text()
+          for report in (site / "reports").glob("*.md"):
+              text = text.replace(
+                  f'href="{report.name}"',
+                  f'href="{report.with_suffix(".html").name}"',
+              )
+          index.write_text(text)
+          PY
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy site
+        id: deploy
+        uses: actions/deploy-pages@v4
