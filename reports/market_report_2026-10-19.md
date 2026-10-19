@@ -1,0 +1,108 @@
+
+# Weekly Market Intelligence Report
+
+Report generated: 2026-10-19
+
+Data observations:
+- SPY close: 2026-10-19
+- 10-year Treasury yield: 2026-10-15
+- 3-month Treasury yield: 2026-10-15
+- Unemployment reference month: 2026-09
+
+---
+
+# Executive Summary
+
+AI-generated commentary:
+
+AI commentary is disabled for this run.
+
+Current Market Regime: **Neutral / Watchlist**
+
+Total Risk Score: **40**
+
+---
+
+# Market Indicators
+
+| Indicator | Value |
+|---|---|
+| SPY Close | 767.32 |
+| 200DMA | 722.33 |
+| Distance from 200DMA | 6.23% |
+| 30D Volatility | 10.24% |
+| Drawdown | -1.51% |
+
+---
+
+# Macro Signals
+
+| Signal | Value |
+|---|---|
+| Yield Spread (10Y-3M) | 0.82 |
+| Unemployment Rate | 4.2% |
+| 3M Avg Unemployment | 4.13% |
+| 3M Unemployment Change | -0.13 |
+
+---
+
+# Risk Scoring Breakdown
+
+## Market Risk
+
+| Component | Score |
+|---|---|
+| Trend Score | 5 |
+| Volatility Score | 5 |
+| Drawdown Score | 5 |
+| Total Market Risk | 15 |
+
+---
+
+## Macro Risk
+
+| Component | Score |
+|---|---|
+| Yield Spread Score | 20 |
+| Unemployment Score | 5 |
+| Total Macro Risk | 25 |
+
+---
+
+# Charts
+
+## SPY vs 200DMA
+
+![SPY](../charts/2026-10-19/spy_vs_200dma.png)
+
+---
+
+## 30D Volatility
+
+![Volatility](../charts/2026-10-19/30d_volatility.png)
+
+---
+
+## Yield Spread
+
+![Yield Spread](../charts/2026-10-19/yield_spread.png)
+
+---
+
+## Unemployment Trend
+
+![Unemployment](../charts/2026-10-19/unemployment_trend.png)
+
+---
+
+# Interpretation
+
+This report evaluates current market conditions using technical and macroeconomic indicators.
+
+The scoring model combines trend, volatility, drawdown, yield curve structure, and labor market dynamics into a unified market regime framework.
+
+---
+
+# Disclaimer
+
+This report is for educational and informational purposes only and does not constitute investment advice.
